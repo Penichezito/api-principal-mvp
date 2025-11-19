@@ -1,0 +1,90 @@
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: freela-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: freela_facility
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - freela-network
+
+  # API Principal (FastAPI)
+  api-principal-mvp:
+    build:
+      context: ./api-principal-mvp
+      dockerfile: Dockerfile
+    container_name: api-principal-mvp
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/freela_facility
+      SECONDARY_API_URL: http://api-secundaria-mvp:5000
+      SECRET_KEY: your-secret-key-change-in-production
+    volumes:
+      - ./api-principal-mvp:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      api-secundaria:
+        condition: service_started
+    networks:
+      - freela-network
+
+  # API Secundária (Flask)
+  api-secundaria-mvp:
+    build:
+      context: ./api-secundaria-mvp
+      dockerfile: Dockerfile
+    container_name: api-secundaria-mvp
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/freela_facility_secondary
+      FLASK_ENV: development
+    volumes:
+      - ./api-secundaria-mvp:/app
+      - uploads_data:/app/uploads
+    ports:
+      - "5000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - freela-network
+
+  # Frontend (Next.js)
+  frontend-mvp:
+    build:
+      context: ./frontend-mvp
+      dockerfile: Dockerfile
+    container_name: frontend-mvp
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api-principal-mvp
+    networks:
+      - freela-network
+
+volumes:
+  postgres_data:
+  uploads_data:
+
+networks:
+  freela-network:
+    driver: bridge
