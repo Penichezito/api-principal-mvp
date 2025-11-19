@@ -119,6 +119,8 @@ async def update_project(
         "file_count": len(project.files)
     }
 
+    return project_dict
+
 @router.delete("/{project_id}")
 async def delete_project(
     project_id: int,

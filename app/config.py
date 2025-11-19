@@ -2,10 +2,10 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = "postgresql://postgres:postgres@db:5432/freela_facility"
+    DATABASE_URL: str = "postgresql+psycopg2://postgres:postgres@localhost:5432/freela_facility"
     
     # JWT
-    SECRET_KEY: str = "your-secret-key-change-in-production"
+    SECRET_KEY: str = "freela_facility"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 43200  # 30 days
     
@@ -17,5 +17,6 @@ class Settings(BaseSettings):
     
     class Config:
         env_file = ".env"
+        env_file_encoding = 'utf-8'
 
 settings = Settings()

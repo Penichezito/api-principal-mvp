@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   # PostgreSQL Database
   db:
@@ -21,17 +23,19 @@ services:
       - freela-network
 
   # API Principal (FastAPI)
-  api-principal-mvp:
+  api-principal:
     build:
-      context: ./api-principal-mvp
+      context: ./api-principal
       dockerfile: Dockerfile
-    container_name: api-principal-mvp
+    container_name: freela-api-principal
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/freela_facility
-      SECONDARY_API_URL: http://api-secundaria-mvp:5000
-      SECRET_KEY: your-secret-key-change-in-production
+      SECONDARY_API_URL: http://api-secundaria:5000
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 43200
     volumes:
-      - ./api-principal-mvp:/app
+      - ./api-principal:/app
     ports:
       - "8000:8000"
     depends_on:
@@ -41,19 +45,28 @@ services:
         condition: service_started
     networks:
       - freela-network
+    restart: unless-stopped
 
-  # API Secundária (Flask)
-  api-secundaria-mvp:
+  # API Secundária (Flask + Google Cloud Vision)
+  api-secundaria:
     build:
-      context: ./api-secundaria-mvp
+      context: ./api-secundaria
       dockerfile: Dockerfile
-    container_name: api-secundaria-mvp
+    container_name: freela-api-secundaria
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/freela_facility_secondary
       FLASK_ENV: development
+      # Google Cloud Vision
+      GOOGLE_CLOUD_VISION_ENABLED: ${GOOGLE_CLOUD_VISION_ENABLED:-true}
+      GOOGLE_APPLICATION_CREDENTIALS: /app/google-credentials.json
+      MIN_TAG_CONFIDENCE: ${MIN_TAG_CONFIDENCE:-0.7}
+      MAX_TAGS_PER_FILE: ${MAX_TAGS_PER_FILE:-15}
     volumes:
-      - ./api-secundaria-mvp:/app
+      - ./api-secundaria:/app
       - uploads_data:/app/uploads
+      # Monte o arquivo de credenciais do Google (se existir)
+      # Se o arquivo não existir, a API usará análise local automaticamente
+      - ./api-secundaria/google-credentials.json:/app/google-credentials.json:ro
     ports:
       - "5000:5000"
     depends_on:
@@ -61,13 +74,14 @@ services:
         condition: service_healthy
     networks:
       - freela-network
+    restart: unless-stopped
 
   # Frontend (Next.js)
-  frontend-mvp:
+  frontend:
     build:
-      context: ./frontend-mvp
+      context: ./frontend
       dockerfile: Dockerfile
-    container_name: frontend-mvp
+    container_name: freela-frontend
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
     volumes:
@@ -77,13 +91,16 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - api-principal-mvp
+      - api-principal
     networks:
       - freela-network
+    restart: unless-stopped
 
 volumes:
   postgres_data:
+    driver: local
   uploads_data:
+    driver: local
 
 networks:
   freela-network:
