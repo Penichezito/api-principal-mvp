@@ -5,7 +5,22 @@ from datetime import datetime
 from app.config import settings
 from typing import Optional, List
 
-engine = create_engine(settings.DATABASE_URL)
+# Importar settings apenas quando necessário para evitar import circular
+def get_database_url():
+    from app.config import settings
+    return settings.DATABASE_URL
+
+engine = create_engine(
+    get_database_url(),
+    pool_pre_ping=True,
+    echo=False,
+    connect_args={
+        "client_encoding": "utf8",
+        "options": "-c client_encoding=utf8",
+        "sslmode": "allow"
+    },
+    encoding="utf-8"
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 class Base(DeclarativeBase):
@@ -59,6 +74,12 @@ def get_db():
         db.close()
 
 def init_db():
-    # Cria tabelas do banco de dados
-    Base.metadata.create_all(bind=engine)
+    """Cria tabelas do banco de dados"""
+    try:
+        print("🔄 Iniciando criação das tabelas do banco de dados...")
+        Base.metadata.create_all(bind=engine)
+        print("✅ Tabelas criadas com sucesso!")
+    except Exception as e:
+        print(f"❌ Erro ao criar tabelas: {str(e)}")
+        raise
 

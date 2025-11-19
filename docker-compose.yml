@@ -25,7 +25,7 @@ services:
   # API Principal (FastAPI)
   api-principal:
     build:
-      context: ./api-principal
+      context: .
       dockerfile: Dockerfile
     container_name: freela-api-principal
     environment:

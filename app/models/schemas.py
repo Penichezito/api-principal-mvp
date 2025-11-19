@@ -45,7 +45,7 @@ class ProjectResponse(ProjectBase):
 # File Schemas
 class FileBase(BaseModel):
     filename: str
-    fyle_type: str
+    file_type: str
     size: int
 
 class FileResponse(FileBase):
