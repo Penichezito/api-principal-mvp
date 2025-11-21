@@ -8,7 +8,7 @@ ENV PYTHONUNBUFFERED=1 \
 
 # Install system dependencies (if needed)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    postgresql-client \
+    postgresql-client curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
@@ -18,11 +18,6 @@ RUN pip install --upgrade pip && \
 
 # Copy application
 COPY . .
-
-# Health check
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    postgresql-client curl \
-    && rm -rf /var/lib/apt/lists/*
 
 # Expose port
 EXPOSE 8000

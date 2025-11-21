@@ -18,8 +18,7 @@ engine = create_engine(
         "client_encoding": "utf8",
         "options": "-c client_encoding=utf8",
         "sslmode": "allow"
-    },
-    encoding="utf-8"
+    }
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

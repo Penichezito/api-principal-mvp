@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database.db import init_db
 from app.routes import auth, projects, files
+from fastapi.responses import RedirectResponse
 
 app = FastAPI(
     title="Freela Facility API",
@@ -29,14 +30,10 @@ async def startup_event():
     # Inicializa banco de dados
     init_db()
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 async def root():
-    # Retorna informações da API
-    return {
-        "message": "Freela Facility API",
-        "version": "1.0.0",
-        "status": "online"
-    }
+    # Redireciona para a documentação
+    return RedirectResponse(url="/docs")
 
 @app.get("/health")
 async def health():

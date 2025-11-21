@@ -1,0 +1,2 @@
+-- Arquivo de inicialização do banco de dados
+-- Adicione seus comandos SQL aqui se necessário
