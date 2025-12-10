@@ -21,7 +21,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 43200  # 30 days
     
     # API Secundária
-    SECONDARY_API_URL: str = "http://api-secundaria:5000"
+    SECONDARY_API_URL: str = (
+        "http://api-secundaria:5000"
+        if IS_DOCKER
+        else "http://localhost:5000"
+    )
     
     # CORS
     ALLOWED_ORIGINS: Union[str, List[str]] = ["http://localhost:3000", "http://frontend:3000"]

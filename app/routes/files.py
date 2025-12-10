@@ -33,7 +33,7 @@ async def upload_file(
         secondary_response = await secondary_api.upload_file(
             file_content=content,
             filename=file.filename or "uploaded_file",
-            file_type=file.content_type or "applicaation/octet-stream"
+            file_type=file.content_type or "application/octet-stream"
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao processar o arquivo: {str(e)}")

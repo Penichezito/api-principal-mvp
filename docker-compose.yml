@@ -39,40 +39,40 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      # api-secundaria:
-      #   condition: service_started
+      api-secundaria:
+        condition: service_started
     networks:
       - freela-network
     restart: unless-stopped
 
-  # # API Secundária (Flask + Google Cloud Vision)
-  # api-secundaria:
-  #   build:
-  #     context: ../api-secundaria-mvp
-  #     dockerfile: Dockerfile
-  #   container_name: freela-api-secundaria
-  #   environment:
-  #     DATABASE_URL: postgresql://postgres:postgres@db:5432/freela_facility_secondary
-  #     FLASK_ENV: development
-  #     # Google Cloud Vision
-  #     GOOGLE_CLOUD_VISION_ENABLED: ${GOOGLE_CLOUD_VISION_ENABLED:-true}
-  #     GOOGLE_APPLICATION_CREDENTIALS: /app/google-credentials.json
-  #     MIN_TAG_CONFIDENCE: ${MIN_TAG_CONFIDENCE:-0.7}
-  #     MAX_TAGS_PER_FILE: ${MAX_TAGS_PER_FILE:-15}
-  #   volumes:
-  #     - ./api-secundaria:/app
-  #     - uploads_data:/app/uploads
-  #     # Monte o arquivo de credenciais do Google (se existir)
-  #     # Se o arquivo não existir, a API usará análise local automaticamente
-  #     - ./api-secundaria/google-credentials.json:/app/google-credentials.json:ro
-  #   ports:
-  #     - "5000:5000"
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
-  #   networks:
-  #     - freela-network
-  #   restart: unless-stopped
+  # API Secundária (Flask + Google Cloud Vision)
+  api-secundaria:
+    build:
+      context: ../api-secundaria-mvp
+      dockerfile: Dockerfile
+    container_name: freela-api-secundaria
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/freela_facility_secondary
+      FLASK_ENV: development
+      # Google Cloud Vision
+      GOOGLE_CLOUD_VISION_ENABLED: ${GOOGLE_CLOUD_VISION_ENABLED:-false}
+      GOOGLE_APPLICATION_CREDENTIALS: /app/google-credentials.json
+      MIN_TAG_CONFIDENCE: ${MIN_TAG_CONFIDENCE:-0.7}
+      MAX_TAGS_PER_FILE: ${MAX_TAGS_PER_FILE:-15}
+    volumes:
+      - ../api-secundaria-mvp:/app
+      - uploads_data:/app/uploads
+      # Monte o arquivo de credenciais do Google (se existir)
+      # Se o arquivo não existir, a API usará análise local automaticamente
+      # - ../api-secundaria-mvp/google-credentials.json:/app/google-credentials.json:ro
+    ports:
+      - "5000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - freela-network
+    restart: unless-stopped
 
   # Frontend (Next.js)
   frontend:
@@ -84,7 +84,7 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
     volumes:
-      - ./../frontend-mvp:/app
+      - ../frontend-mvp:/app
       - /app/node_modules
       - /app/.next
     ports:
