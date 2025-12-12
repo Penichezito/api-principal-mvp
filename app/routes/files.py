@@ -36,7 +36,19 @@ async def upload_file(
             file_type=file.content_type or "application/octet-stream"
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao processar o arquivo: {str(e)}")
+        # Log detalhado do erro para debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Erro ao processar arquivo '{file.filename}': {str(e)}")
+        
+        # Verifica tipo específico de erro
+        error_detail = f"Erro ao processar o arquivo: {str(e)}"
+        if "timeout" in str(e).lower():
+            raise HTTPException(status_code=504, detail="Timeout ao processar arquivo na API secundária")
+        elif "connection" in str(e).lower():
+            raise HTTPException(status_code=502, detail="Não foi possível conectar com a API secundária")
+        else:
+            raise HTTPException(status_code=500, detail=error_detail)
     
     # Salva informações do arquivo no banco
     new_file = File(
@@ -63,13 +75,13 @@ async def upload_file(
 
 @router.get("", response_model=List[FileResponse])
 async def get_files(
-    project_id: int, 
+    project_id: int | None = None, 
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ): 
     query = db.query(File).join(Project).filter(Project.user_id == current_user.id)
 
-    if project_id:
+    if project_id is not None:
         query = query.filter(File.project_id == project_id)
 
     files = query.all()
