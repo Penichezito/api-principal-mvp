@@ -381,8 +381,8 @@ pytest --cov=app tests/
 
 ## 🔗 Links Relacionados
 
-- [**API Secundária - Google Cloud Vision**](../../api-secundaria-mvp/README.md)
-- [**Frontend - Guia do Usuário**](../../frontend-mvp/README.md)
+- [**API Secundária - Google Cloud Vision**](https://github.com/Penichezito/api-secundaria-mvp)
+- [**Frontend - Guia do Usuário**](https://github.com/Penichezito/frontend-mvp)
 
 ---
 
