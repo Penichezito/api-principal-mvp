@@ -55,7 +55,7 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/freela_facility_secondary
       FLASK_ENV: development
       # Google Cloud Vision
-      GOOGLE_CLOUD_VISION_ENABLED: ${GOOGLE_CLOUD_VISION_ENABLED:-false}
+      GOOGLE_CLOUD_VISION_ENABLED: ${GOOGLE_CLOUD_VISION_ENABLED:-true}
       GOOGLE_APPLICATION_CREDENTIALS: /app/google-credentials.json
       MIN_TAG_CONFIDENCE: ${MIN_TAG_CONFIDENCE:-0.7}
       MAX_TAGS_PER_FILE: ${MAX_TAGS_PER_FILE:-15}

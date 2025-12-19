@@ -9,39 +9,48 @@ from app.services.api_secondary import secondary_api
 
 router = APIRouter(prefix="/files", tags=["files"])
 
-@router.post("/upload", response_model=FileResponse)
+@router.post("/upload")
 async def upload_file(
     file: UploadFile = FastAPIFile(...),
     project_id: int = Form(...),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
-): 
-    # Verifica se o projeto existe e pertence ao usuário autenticado
+):
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"📤 Upload iniciado: {file.filename}, projeto: {project_id}")
+    
+    # Verifica se o projeto existe e pertence ao usuário
     project = db.query(Project).filter(
         Project.id == project_id,
         Project.user_id == current_user.id
     ).first()
 
     if not project:
+        logger.error(f"❌ Projeto {project_id} não encontrado para usuário {current_user.id}")
         raise HTTPException(status_code=404, detail="Projeto não encontrado")
     
+    logger.info(f"✅ Projeto encontrado: {project.name}")
+    
     # Lê o conteúdo do arquivo
-    content = await file.read()
+    try:
+        content = await file.read()
+        logger.info(f"✅ Arquivo lido: {len(content)} bytes")
+    except Exception as e:
+        logger.error(f"❌ Erro ao ler arquivo: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao ler arquivo: {str(e)}")
 
     # Envia o arquivo para API secundária para processamento
-    try: 
+    try:
+        logger.info(f"📡 Enviando para API secundária...")
         secondary_response = await secondary_api.upload_file(
             file_content=content,
             filename=file.filename or "uploaded_file",
             file_type=file.content_type or "application/octet-stream"
         )
+        logger.info(f"✅ Resposta da API secundária: {secondary_response}")
     except Exception as e:
-        # Log detalhado do erro para debugging
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Erro ao processar arquivo '{file.filename}': {str(e)}")
-        
-        # Verifica tipo específico de erro
+        logger.error(f"❌ Erro na API secundária: {str(e)}", exc_info=True)
         error_detail = f"Erro ao processar o arquivo: {str(e)}"
         if "timeout" in str(e).lower():
             raise HTTPException(status_code=504, detail="Timeout ao processar arquivo na API secundária")
@@ -51,18 +60,26 @@ async def upload_file(
             raise HTTPException(status_code=500, detail=error_detail)
     
     # Salva informações do arquivo no banco
-    new_file = File(
-        filename=file.filename,
-        file_path=secondary_response.get("file_path", ""),
-        file_type=file.content_type or "application/octet-stream",
-        size=len(content),
-        project_id=project.id,
-        secondary_file_id=secondary_response.get("file_id")
-    )
-    db.add(new_file)
-    db.commit()
-    db.refresh(new_file)
+    try:
+        logger.info(f"💾 Salvando no banco de dados...")
+        new_file = File(
+            filename=file.filename,
+            file_path=secondary_response.get("file_path", ""),
+            file_type=file.content_type or "application/octet-stream",
+            size=len(content),
+            project_id=project.id,
+            secondary_file_id=secondary_response.get("file_id")
+        )
+        db.add(new_file)
+        db.commit()
+        db.refresh(new_file)
+        logger.info(f"✅ Arquivo salvo no banco: ID {new_file.id}")
+    except Exception as e:
+        logger.error(f"❌ Erro ao salvar no banco: {str(e)}", exc_info=True)
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro ao salvar arquivo: {str(e)}")
 
+    logger.info(f"🎉 Upload concluído com sucesso!")
     return {
         "id": new_file.id,
         "filename": new_file.filename,
